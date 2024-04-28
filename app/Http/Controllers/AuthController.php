@@ -58,20 +58,31 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
+
     public function login()
     {
         $credentials = request(['email', 'password']);
 
         try {
+            // تلاش برای ورود کاربر با استفاده از JWT
             if (!$token = JWTAuth::attempt($credentials)) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
+
+            // بررسی اینکه کاربر ادمین است یا خیر
+            $user = auth()->user();
+            if ($user->is_admin) {
+                // اگر کاربر ادمین باشد، توکن با دسترسی ادمینیته را برمی‌گردانیم
+                return $this->respondWithAdminToken($token);
+            }
+
+            // اگر کاربر ادمین نباشد، توکن معمولی را برمی‌گردانیم
+            return $this->respondWithToken($token);
         } catch (JWTException $e) {
             return response()->json(['error' => 'Could not create token'], 500);
         }
-
-        return $this->respondWithToken($token);
     }
+
 
     /**
      * Get the authenticated User.
@@ -118,6 +129,13 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
+    /**
+     * Get the token array structure.
+     *
+     * @param string $token
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     protected function respondWithToken($token)
     {
         return response()->json([
@@ -126,4 +144,22 @@ class AuthController extends Controller
             'expires_in' => auth()->factory()->getTTL() * 60
         ]);
     }
+
+    /**
+     * Get the admin token array structure.
+     *
+     * @param string $token
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function respondWithAdminToken($token)
+    {
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60,
+            'is_admin' => true // اضافه کردن فیلد ادمینیته به پاسخ
+        ]);
+    }
+
 }

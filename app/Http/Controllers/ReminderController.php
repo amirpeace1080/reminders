@@ -13,22 +13,32 @@ class ReminderController extends Controller
     /**
      * Display a listing of the resource.
      */
+
     public function index()
-{
-    // خواندن همه یادآورها
-    $reminders = Reminder::all();
+    {
+        // بررسی احراز هویت بر مبنای نقش
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
 
-    // خواندن استان‌ها و شهرهای مرتبط با آن‌ها
-    $provinces = Province::with('cities')->get();
+        if (auth()->user()->is_admin) {
+            // اگر کاربر ادمین باشد، تمام یادآورها را برگردانید
+            $reminders = Reminder::all();
+        } else {
+            // در غیر این صورت، فقط یادآورهای مرتبط با کاربر جاری را برگردانید
+            $userId = auth()->id();
+            $reminders = Reminder::where('user_id', $userId)->get();
+        }
 
-    // ارسال پاسخ به کلاینت
-    return response()->json([
-        'reminders' => $reminders,
-        'provinces' => $provinces
-    ], Response::HTTP_OK);
-}
+        // ارسال پاسخ به کلاینت
+        return response()->json([
+            'reminders' => $reminders
+        ], Response::HTTP_OK);
+    }
 
-    
+
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -49,7 +59,7 @@ class ReminderController extends Controller
         $reminder->description = $request->input('description');
         $reminder->due_date = $request->input('due_date');
         $reminder->payment_period = $request->input('payment_period');
-//        $reminder->user_id = auth()->id();
+        $reminder->user_id = auth()->id();
         $reminder->save();
 
         return response()->json($reminder, Response::HTTP_CREATED);
@@ -69,7 +79,7 @@ class ReminderController extends Controller
     public function edit(string $id)
     {
         $reminder = Reminder::find($id);
-        return view('reminders.edit', compact('reminder'));
+        return response()->json($reminder, Response::HTTP_OK);
     }
 
     /**
@@ -78,9 +88,10 @@ class ReminderController extends Controller
     public function update(Request $request, string $id)
     {
         $reminder = Reminder::find($id);
-        $reminder->title = $request->input('title');
-        $reminder->due_date = $request->input('due_date');
+        $reminder->insurance_menu = $request->input('insurance_menu');
         $reminder->description = $request->input('description');
+        $reminder->due_date = $request->input('due_date');
+        $reminder->payment_period = $request->input('payment_period');
         $reminder->update();
 
         return response()->json($reminder, Response::HTTP_OK);

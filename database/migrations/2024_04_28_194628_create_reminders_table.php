@@ -17,8 +17,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->dateTime('due_date');
             $table->enum('payment_period', ['هر ماه', 'هر سه ماه', 'هر شش ماه', 'سالیانه', 'تکرار نشود'])->default(null);
-//            $table->unsignedBigInteger('user_id');
-//            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
     }
